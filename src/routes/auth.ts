@@ -24,18 +24,22 @@ router.post(
     body('phone').optional().trim(),
     body('password').isLength({ min: 8 }),
     body('role').optional().isIn(['customer', 'worker']),
+    body('terms_accepted').optional().isBoolean(),
   ],
   async (req: Request, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { name, email, phone, password, role = 'customer' } = req.body;
+    const { name, email, phone, password, role = 'customer', terms_accepted } = req.body;
+    if (terms_accepted !== true) {
+      return res.status(400).json({ error: 'You must accept the Terms of Service and Privacy Policy' });
+    }
     const passwordHash = await bcrypt.hash(password, 12);
 
     try {
       const r = await pool.query(
-        `INSERT INTO users (name, email, phone, password_hash, role)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO users (name, email, phone, password_hash, role, terms_accepted_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())
          RETURNING id, name, email, phone, role, created_at`,
         [name, email, phone || null, passwordHash, role]
       );

@@ -19,12 +19,22 @@ router.patch('/users/:id/ban', [body('banned').isBoolean()], async (req, res) =>
     return res.json({ ok: true, message: banned ? 'User banned' : 'User unbanned' });
 });
 router.get('/workers', async (req, res) => {
-    const r = await pool.query(`SELECT w.id, w.verified, w.id_verified, w.rating, w.review_count, w.created_at,
+    const r = await pool.query(`SELECT w.id, w.verified, w.id_verified, w.id_document_url, w.rating, w.review_count, w.created_at,
             u.name, u.email, sc.name as service_name
      FROM workers w
      JOIN users u ON u.id = w.user_id
      JOIN service_categories sc ON sc.id = w.service_category_id
      ORDER BY w.created_at DESC`);
+    return res.json(r.rows);
+});
+router.get('/workers/pending-verification', async (req, res) => {
+    const r = await pool.query(`SELECT w.id, w.id_document_url, w.created_at,
+            u.name, u.email, sc.name as service_name
+     FROM workers w
+     JOIN users u ON u.id = w.user_id
+     JOIN service_categories sc ON sc.id = w.service_category_id
+     WHERE w.id_document_url IS NOT NULL AND w.id_verified = false
+     ORDER BY w.created_at ASC`);
     return res.json(r.rows);
 });
 router.patch('/workers/:id/verify', [body('verified').isBoolean()], async (req, res) => {

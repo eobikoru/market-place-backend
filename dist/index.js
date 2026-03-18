@@ -3,12 +3,14 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { config } from './config/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { authLimiter } from './middleware/rateLimit.js';
 import authRoutes from './routes/auth.js';
 import servicesRoutes from './routes/services.js';
 import workersRoutes from './routes/workers.js';
 import bookingsRoutes from './routes/bookings.js';
 import paymentsRoutes from './routes/payments.js';
 import adminRoutes from './routes/admin.js';
+import notificationsRoutes from './routes/notifications.js';
 const app = express();
 if (config.env === 'production') {
     // Ensure correct client IP / protocol when behind a proxy (Render/Nginx/Cloudflare/etc.)
@@ -28,12 +30,13 @@ app.use(cors({
 }));
 app.use(express.json());
 app.get('/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
-app.use(`${config.apiPrefix}/auth`, authRoutes);
+app.use(`${config.apiPrefix}/auth`, authLimiter, authRoutes);
 app.use(`${config.apiPrefix}/services`, servicesRoutes);
 app.use(`${config.apiPrefix}/workers`, workersRoutes);
 app.use(`${config.apiPrefix}/bookings`, bookingsRoutes);
 app.use(`${config.apiPrefix}/payments`, paymentsRoutes);
 app.use(`${config.apiPrefix}/admin`, adminRoutes);
+app.use(`${config.apiPrefix}/notifications`, notificationsRoutes);
 app.use(errorHandler);
 const server = app.listen(config.port, () => {
     console.log(`HelpMe API listening on port ${config.port} (${config.env})`);
